@@ -45,6 +45,8 @@ async def sync(account: str, container: str, awsAccessKeyId: Optional[str]):
         azure_blob_client.set_sas_token(decrypt(datasource.sasToken.get_secret_value()))
     if datasource.awsSecretAccessKey:
         azure_blob_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+    if datasource.endpointUrl:
+        azure_blob_client.set_endpoint_url(datasource.endpointUrl)
 
     #######################################
     # Reading and Parsing Local Metafiles #
@@ -100,6 +102,7 @@ async def sync(account: str, container: str, awsAccessKeyId: Optional[str]):
                 aws_access_key_id=azure_blob_client.awsAccessKeyId,
                 aws_secret_access_key=azure_blob_client.awsSecretAccessKey.get_secret_value(),
                 region_name=azure_blob_client.account,
+                endpoint_url=azure_blob_client.endpointUrl,
             )
             paginator = s3_client.get_paginator("list_objects_v2")
             meta_blob_names = []
@@ -286,6 +289,7 @@ async def import_datasources_from_env():
                     sasToken=SecretStr(connection["sasToken"]) if "sasToken" in connection else None,
                     accountKey=SecretStr(connection["accountKey"]) if "accountKey" in connection else None,
                     awsSecretAccessKey=SecretStr(connection["awsSecretAccessKey"]) if "awsSecretAccessKey" in connection else None,
+                    endpointUrl=connection["endpointUrl"] if "endpointUrl" in connection else None,
                     name=connection["name"],
                     description=connection["description"] if "description" in connection else None,
                     imageURL=connection["imageURL"] if "imageURL" in connection else None,

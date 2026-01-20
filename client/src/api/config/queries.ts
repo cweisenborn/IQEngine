@@ -102,6 +102,7 @@ interface ConnectionInfo {
     sasToken: string;
     imageURL: string;
     description: string;
+    endpointUrl?: string;
   }>;
 }
 

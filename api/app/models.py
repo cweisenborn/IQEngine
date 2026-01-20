@@ -14,6 +14,7 @@ class DataSource(BaseModel):
     sasToken: Optional[SecretStr] = None
     accountKey: Optional[SecretStr] = None
     awsSecretAccessKey: Optional[SecretStr] = None
+    endpointUrl: Optional[str] = None
     owners: Optional[List[str]] = []
     readers: Optional[List[str]] = []
     public: Optional[bool] = False

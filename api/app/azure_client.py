@@ -20,6 +20,7 @@ class AzureBlobClient:
     sas_token: SecretStr = None
     account_key: SecretStr = None
     awsSecretAccessKey: SecretStr = None  # AWS S3 only
+    endpointUrl: str = None  # AWS S3 only - for custom S3-compatible services
     base_filepath: str = None  # only used for local
 
     def __init__(self, account, container, awsAccessKeyId):
@@ -41,6 +42,9 @@ class AzureBlobClient:
 
     def set_aws_secret_access_key(self, aws_secret_access_key):
         self.awsSecretAccessKey = aws_secret_access_key
+
+    def set_endpoint_url(self, endpoint_url):
+        self.endpointUrl = endpoint_url
 
     def sas_token_has_write_permission(self):
         if not self.sas_token:
@@ -116,6 +120,7 @@ class AzureBlobClient:
                 aws_access_key_id=self.awsAccessKeyId,
                 aws_secret_access_key=self.awsSecretAccessKey.get_secret_value(),
                 region_name=self.account,
+                endpoint_url=self.endpointUrl,
             ) as s3_client:
                 if length is not None and offset is not None:
                     byte_range = f"bytes={offset}-{offset + length - 1}"
@@ -143,6 +148,7 @@ class AzureBlobClient:
                 aws_access_key_id=self.awsAccessKeyId,
                 aws_secret_access_key=self.awsSecretAccessKey.get_secret_value(),
                 region_name=self.account,
+                endpoint_url=self.endpointUrl,
             ).__aenter__()
             try:
                 if length is not None and offset is not None:
@@ -172,6 +178,7 @@ class AzureBlobClient:
                 aws_access_key_id=self.awsAccessKeyId,
                 aws_secret_access_key=self.awsSecretAccessKey.get_secret_value(),
                 region_name=self.account,
+                endpoint_url=self.endpointUrl,
             ) as s3_client:
                 await s3_client.put_object(Bucket=self.container, Key=filepath, Body=data)
             return
@@ -197,6 +204,7 @@ class AzureBlobClient:
                 aws_access_key_id=self.awsAccessKeyId,
                 aws_secret_access_key=self.awsSecretAccessKey.get_secret_value(),
                 region_name=self.account,
+                endpoint_url=self.endpointUrl,
             ) as s3_client:
                 try:
                     await s3_client.head_object(Bucket=self.container, Key=filepath)
@@ -217,6 +225,7 @@ class AzureBlobClient:
                 aws_access_key_id=self.awsAccessKeyId,
                 aws_secret_access_key=self.awsSecretAccessKey.get_secret_value(),
                 region_name=self.account,
+                endpoint_url=self.endpointUrl,
             )
             response = s3_client.head_object(Bucket=self.container, Key=filepath)
             return response["ContentLength"]
