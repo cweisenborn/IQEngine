@@ -8,6 +8,7 @@ import boto3
 import numpy as np
 from bson import encode
 from bson.raw_bson import RawBSONDocument
+from botocore.config import Config
 from fastapi import Depends
 from helpers.cipher import decrypt, encrypt
 from helpers.datasource_access import check_access
@@ -45,6 +46,8 @@ async def sync(account: str, container: str, awsAccessKeyId: Optional[str]):
         azure_blob_client.set_sas_token(decrypt(datasource.sasToken.get_secret_value()))
     if datasource.awsSecretAccessKey:
         azure_blob_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+    if datasource.endpointUrl:
+        azure_blob_client.set_endpoint_url(datasource.endpointUrl)
 
     #######################################
     # Reading and Parsing Local Metafiles #
@@ -95,11 +98,15 @@ async def sync(account: str, container: str, awsAccessKeyId: Optional[str]):
     #########################################################
     else:
         if azure_blob_client.awsAccessKeyId:  # S3
+            # Get S3 config for path-style addressing if custom endpoint is used
+            s3_config = azure_blob_client.get_s3_config()
             s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=azure_blob_client.awsAccessKeyId,
                 aws_secret_access_key=azure_blob_client.awsSecretAccessKey.get_secret_value(),
                 region_name=azure_blob_client.account,
+                endpoint_url=azure_blob_client.endpointUrl,
+                config=s3_config,
             )
             paginator = s3_client.get_paginator("list_objects_v2")
             meta_blob_names = []
@@ -286,6 +293,7 @@ async def import_datasources_from_env():
                     sasToken=SecretStr(connection["sasToken"]) if "sasToken" in connection else None,
                     accountKey=SecretStr(connection["accountKey"]) if "accountKey" in connection else None,
                     awsSecretAccessKey=SecretStr(connection["awsSecretAccessKey"]) if "awsSecretAccessKey" in connection else None,
+                    endpointUrl=connection["endpointUrl"] if "endpointUrl" in connection else None,
                     name=connection["name"],
                     description=connection["description"] if "description" in connection else None,
                     imageURL=connection["imageURL"] if "imageURL" in connection else None,

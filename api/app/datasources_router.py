@@ -68,7 +68,7 @@ async def sync_all_datasources(background_tasks: BackgroundTasks):
             all_datasources_list = await all_datasources.to_list(length=100)
             for datasource in all_datasources_list:
                 print("Syncing-", datasource)
-                background_tasks.add_task(datasources.sync, datasource["account"], datasource["container"])
+                background_tasks.add_task(datasources.sync, datasource["account"], datasource["container"], datasource.get("awsAccessKeyId"))
         else:
             raise HTTPException(status_code=404, detail="allowRefreshing wasn't set to true in env vars")
     return {"message": "Syncing All"}
@@ -151,7 +151,7 @@ async def sync_datasource(
     if not existing_datasource:
         raise HTTPException(status_code=404, detail="Datasource not found")
 
-    background_tasks.add_task(datasources.sync, account, container)
+    background_tasks.add_task(datasources.sync, account, container, existing_datasource.get("awsAccessKeyId"))
     return {"message": "Syncing"}
 
 
@@ -318,6 +318,9 @@ async def get_meta_thumbnail(
     aws_secret_access_key = datasource.awsSecretAccessKey.get_secret_value() if datasource.awsSecretAccessKey else None
     if aws_secret_access_key is not None:
         azure_client.set_aws_secret_access_key(decrypt(aws_secret_access_key))
+
+    if datasource.endpointUrl:
+        azure_client.set_endpoint_url(datasource.endpointUrl)
 
     thumbnail_path = get_file_name(filepath, ApiType.THUMB)
     content_type = get_content_type(ApiType.THUMB)
