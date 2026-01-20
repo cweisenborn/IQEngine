@@ -8,6 +8,7 @@ import boto3
 import numpy as np
 from bson import encode
 from bson.raw_bson import RawBSONDocument
+from botocore.config import Config
 from fastapi import Depends
 from helpers.cipher import decrypt, encrypt
 from helpers.datasource_access import check_access
@@ -97,12 +98,15 @@ async def sync(account: str, container: str, awsAccessKeyId: Optional[str]):
     #########################################################
     else:
         if azure_blob_client.awsAccessKeyId:  # S3
+            # Get S3 config for path-style addressing if custom endpoint is used
+            s3_config = azure_blob_client.get_s3_config()
             s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=azure_blob_client.awsAccessKeyId,
                 aws_secret_access_key=azure_blob_client.awsSecretAccessKey.get_secret_value(),
                 region_name=azure_blob_client.account,
                 endpoint_url=azure_blob_client.endpointUrl,
+                config=s3_config,
             )
             paginator = s3_client.get_paginator("list_objects_v2")
             meta_blob_names = []
