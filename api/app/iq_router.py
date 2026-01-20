@@ -52,6 +52,9 @@ async def get_iq_data(
     if hasattr(datasource, "awsSecretAccessKey"):
         if datasource.awsSecretAccessKey:
             azure_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+    if hasattr(datasource, "endpointUrl"):
+        if datasource.endpointUrl:
+            azure_client.set_endpoint_url(datasource.endpointUrl)
 
     try:
         block_indexes = [int(num) for num in block_indexes_str.split(",")]
@@ -176,6 +179,9 @@ async def get_iqfile(
     if hasattr(datasource, "awsSecretAccessKey"):
         if datasource.awsSecretAccessKey:
             azure_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+    if hasattr(datasource, "endpointUrl"):
+        if datasource.endpointUrl:
+            azure_client.set_endpoint_url(datasource.endpointUrl)
 
     if not azure_client.blob_exist(iq_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -214,6 +220,9 @@ async def get_metafile(
     if hasattr(datasource, "awsSecretAccessKey"):
         if datasource.awsSecretAccessKey:
             azure_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+    if hasattr(datasource, "endpointUrl"):
+        if datasource.endpointUrl:
+            azure_client.set_endpoint_url(datasource.endpointUrl)
 
     if not azure_client.blob_exist(meta_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -246,6 +255,8 @@ async def get_minimap_iq(
             azure_client.set_account_key(decrypt(datasource.accountKey.get_secret_value()))
         if datasource.awsSecretAccessKey:
             azure_client.set_aws_secret_access_key(decrypt(datasource.awsSecretAccessKey.get_secret_value()))
+        if datasource.endpointUrl:
+            azure_client.set_endpoint_url(datasource.endpointUrl)
         minimap_iq_file = get_file_name(filepath, ApiType.MINIMAP)
         # If minimap has already been generated
         if await azure_client.blob_exist(minimap_iq_file):
