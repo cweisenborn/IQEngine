@@ -68,7 +68,7 @@ async def sync_all_datasources(background_tasks: BackgroundTasks):
             all_datasources_list = await all_datasources.to_list(length=100)
             for datasource in all_datasources_list:
                 print("Syncing-", datasource)
-                background_tasks.add_task(datasources.sync, datasource["account"], datasource["container"])
+                background_tasks.add_task(datasources.sync, datasource["account"], datasource["container"], datasource.get("awsAccessKeyId"))
         else:
             raise HTTPException(status_code=404, detail="allowRefreshing wasn't set to true in env vars")
     return {"message": "Syncing All"}
@@ -151,7 +151,7 @@ async def sync_datasource(
     if not existing_datasource:
         raise HTTPException(status_code=404, detail="Datasource not found")
 
-    background_tasks.add_task(datasources.sync, account, container)
+    background_tasks.add_task(datasources.sync, account, container, existing_datasource.get("awsAccessKeyId"))
     return {"message": "Syncing"}
 
 
