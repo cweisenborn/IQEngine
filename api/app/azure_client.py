@@ -44,11 +44,20 @@ class AzureBlobClient:
     def set_aws_secret_access_key(self, aws_secret_access_key):
         self.awsSecretAccessKey = aws_secret_access_key
 
-    def set_endpoint_url(self, endpoint_url):
+    def set_endpoint_url(self, endpoint_url: Optional[str]):
+        """Set the S3 endpoint URL for custom S3-compatible services (e.g., MinIO, LocalStack).
+        
+        Args:
+            endpoint_url: The full URL of the S3-compatible endpoint (e.g., 'http://localhost:9000')
+        """
         self.endpointUrl = endpoint_url
 
-    def get_s3_config(self):
-        """Get boto3 Config object for S3 client. Uses path-style addressing for custom endpoints."""
+    def get_s3_config(self) -> Optional[Config]:
+        """Get boto3 Config object for S3 client.
+        
+        Returns Config with path-style addressing for custom endpoints, None for AWS endpoints.
+        Path-style addressing is required for most S3-compatible services.
+        """
         if self.endpointUrl:
             # Use path-style addressing for custom S3-compatible endpoints (e.g., MinIO, LocalStack)
             return Config(s3={"addressing_style": "path"})
