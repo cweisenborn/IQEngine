@@ -81,6 +81,10 @@ export function SpectrogramContextProvider({
   const [meta, setMeta] = useState<SigMFMetadata>(originMeta);
   const [canDownload, setCanDownload] = useState<boolean>(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState<number>();
+  
+  // Track if we've auto-adjusted fftSize to avoid overriding user changes
+  const hasAutoAdjustedFFTSize = React.useRef(false);
+  
   const { clearIQData } = useDataCacheFunctions(type, account, container, filePath, fftSize);
 
   function setPythonSnippet(pythonParameterSnippet: string) {
@@ -93,10 +97,10 @@ export function SpectrogramContextProvider({
     
     setMeta(originMeta);
 
-    // Auto-adjust FFT size for small files
-    // Use a ref or check to only do this once per file to avoid interfering with user changes
-    if (originMeta.getTotalSamples() < 100e3) {
+    // Auto-adjust FFT size for small files, but only once to avoid overriding user changes
+    if (!hasAutoAdjustedFFTSize.current && originMeta.getTotalSamples() < 100e3) {
       setFFTSize(256);
+      hasAutoAdjustedFFTSize.current = true;
     }
   }, [originMeta]);
 
