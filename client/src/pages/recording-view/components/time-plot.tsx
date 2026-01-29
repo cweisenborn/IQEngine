@@ -16,7 +16,8 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
   const [Q, setQ] = useState<Float32Array>();
   const [isLoading, setIsLoading] = useState(true);
   
-  // Track if we've ever successfully loaded data to prevent Plot from rendering with empty arrays
+  // Track if we currently have valid data loaded (prevents Plot rendering before/without data)
+  // Note: This flag is reset to false when data becomes invalid or empty
   const hasEverHadData = React.useRef(false);
 
   useEffect(() => {
