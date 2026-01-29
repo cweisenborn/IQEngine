@@ -68,6 +68,7 @@ export function SpectrogramContextProvider({
   const [magnitudeMax, setMagnitudeMax] = useState<number>(seedValues.magnitudeMax);
   const [colmap, setColmap] = useState<string>(seedValues.colmap);
   const [windowFunction, setWindowFunction] = useState<string>(seedValues.windowFunction);
+  const [fftSize, setFFTSize] = useState<number>(seedValues.fftSize);
   const [spectrogramHeight, setSpectrogramHeight] = useState<number>(seedValues.spectrogramHeight);
   const [spectrogramWidth, setSpectrogramWidth] = useState<number>(seedValues.spectrogramWidth);
   const [fftStepSize, setFFTStepSize] = useState<number>(seedValues.fftStepSize);
@@ -80,16 +81,6 @@ export function SpectrogramContextProvider({
   const [meta, setMeta] = useState<SigMFMetadata>(originMeta);
   const [canDownload, setCanDownload] = useState<boolean>(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState<number>();
-  
-  // Compute initial fftSize based on metadata to avoid request cancellations
-  const initialFFTSize = React.useMemo(() => {
-    if (originMeta && originMeta.getTotalSamples() < 100e3) {
-      return 256;
-    }
-    return seedValues.fftSize;
-  }, [originMeta, seedValues.fftSize]);
-  
-  const [fftSize, setFFTSize] = useState<number>(initialFFTSize);
   const { clearIQData } = useDataCacheFunctions(type, account, container, filePath, fftSize);
 
   function setPythonSnippet(pythonParameterSnippet: string) {
@@ -98,14 +89,16 @@ export function SpectrogramContextProvider({
   }
 
   useEffect(() => {
+    if (!originMeta) return;
+    
     setMeta(originMeta);
 
-    // Only auto-adjust FFT size on initial load for small files
-    // Don't override if user has manually changed it
-    if (originMeta && originMeta.getTotalSamples() < 100e3 && fftSize === seedValues.fftSize) {
+    // Auto-adjust FFT size for small files
+    // Use a ref or check to only do this once per file to avoid interfering with user changes
+    if (originMeta.getTotalSamples() < 100e3) {
       setFFTSize(256);
     }
-  }, [originMeta, seedValues.fftSize]);
+  }, [originMeta]);
 
   return (
     <SpectrogramContext.Provider
