@@ -62,12 +62,9 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
         Below shows the power spectral density of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        isLoading || frequencies.length === 0 || magnitudes.length === 0 ? (
-          <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
-            <p className="text-primary text-center">Loading frequency data...</p>
-          </div>
-        ) : (
+        !isLoading && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0 ? (
           <Plot
+            key={`freq-plot-${frequencies.length}-${magnitudes.length}`}
             data={[
               {
                 x: frequencies,
@@ -101,6 +98,10 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
               scrollZoom: true,
             }}
           />
+        ) : (
+          <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
+            <p className="text-primary text-center">Loading frequency data...</p>
+          </div>
         )
       ) : (
         <>
