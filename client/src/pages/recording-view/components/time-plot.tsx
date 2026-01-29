@@ -15,6 +15,9 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
   const [I, setI] = useState<Float32Array>();
   const [Q, setQ] = useState<Float32Array>();
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Track if we've ever successfully loaded data to prevent Plot from rendering with empty arrays
+  const hasEverHadData = React.useRef(false);
 
   useEffect(() => {
     if (displayedIQ && displayedIQ.length > 0) {
@@ -46,6 +49,7 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
       setI(temp_I);
       setQ(temp_Q);
       setIsLoading(false);
+      hasEverHadData.current = true; // Mark that we've successfully loaded data
     } else {
       setIsLoading(true);
     }
@@ -57,7 +61,7 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
         Below shows the time domain of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        !isLoading && I && Q && I.length > 0 && Q.length > 0 ? (
+        !isLoading && hasEverHadData.current && I && Q && I.length > 0 && Q.length > 0 ? (
           <Plot
             data={[
               {

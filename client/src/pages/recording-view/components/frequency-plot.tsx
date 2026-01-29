@@ -15,6 +15,10 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
   const [frequencies, setFrequencies] = useState([]);
   const [magnitudes, setMagnitudes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Track if we've ever successfully loaded data to prevent Plot from rendering with empty arrays
+  const hasEverHadData = React.useRef(false);
+  
   const sampleRate = meta.getSampleRate();
   const centerFrequency = meta.getCenterFrequency();
 
@@ -51,6 +55,7 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
         setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
       }
       setIsLoading(false);
+      hasEverHadData.current = true; // Mark that we've successfully loaded data
     } else {
       setIsLoading(true);
     }
@@ -62,7 +67,7 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
         Below shows the power spectral density of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        !isLoading && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0 ? (
+        !isLoading && hasEverHadData.current && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0 ? (
           <Plot
             data={[
               {
