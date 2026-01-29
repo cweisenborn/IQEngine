@@ -68,16 +68,6 @@ export function SpectrogramContextProvider({
   const [magnitudeMax, setMagnitudeMax] = useState<number>(seedValues.magnitudeMax);
   const [colmap, setColmap] = useState<string>(seedValues.colmap);
   const [windowFunction, setWindowFunction] = useState<string>(seedValues.windowFunction);
-  
-  // Compute initial fftSize based on metadata to avoid request cancellations
-  const initialFFTSize = React.useMemo(() => {
-    if (originMeta && originMeta.getTotalSamples() < 100e3) {
-      return 256;
-    }
-    return seedValues.fftSize;
-  }, [originMeta, seedValues.fftSize]);
-  
-  const [fftSize, setFFTSize] = useState<number>(initialFFTSize);
   const [spectrogramHeight, setSpectrogramHeight] = useState<number>(seedValues.spectrogramHeight);
   const [spectrogramWidth, setSpectrogramWidth] = useState<number>(seedValues.spectrogramWidth);
   const [fftStepSize, setFFTStepSize] = useState<number>(seedValues.fftStepSize);
@@ -90,6 +80,16 @@ export function SpectrogramContextProvider({
   const [meta, setMeta] = useState<SigMFMetadata>(originMeta);
   const [canDownload, setCanDownload] = useState<boolean>(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState<number>();
+  
+  // Compute initial fftSize based on metadata to avoid request cancellations
+  const initialFFTSize = React.useMemo(() => {
+    if (originMeta && originMeta.getTotalSamples() < 100e3) {
+      return 256;
+    }
+    return seedValues.fftSize;
+  }, [originMeta, seedValues.fftSize]);
+  
+  const [fftSize, setFFTSize] = useState<number>(initialFFTSize);
   const { clearIQData } = useDataCacheFunctions(type, account, container, filePath, fftSize);
 
   function setPythonSnippet(pythonParameterSnippet: string) {
@@ -100,16 +100,12 @@ export function SpectrogramContextProvider({
   useEffect(() => {
     setMeta(originMeta);
 
-    // Update FFT size if it changes based on new metadata
-    if (originMeta && originMeta.getTotalSamples() < 100e3) {
-      if (fftSize !== 256) {
-        setFFTSize(256);
-      }
-    } else if (originMeta && fftSize !== seedValues.fftSize) {
-      // Reset to default if file is not small
-      setFFTSize(seedValues.fftSize);
+    // Only auto-adjust FFT size on initial load for small files
+    // Don't override if user has manually changed it
+    if (originMeta && originMeta.getTotalSamples() < 100e3 && fftSize === seedValues.fftSize) {
+      setFFTSize(256);
     }
-  }, [originMeta, fftSize, seedValues.fftSize]);
+  }, [originMeta, seedValues.fftSize]);
 
   return (
     <SpectrogramContext.Provider
