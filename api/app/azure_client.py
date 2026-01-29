@@ -210,8 +210,23 @@ class AzureBlobClient:
         fftSize = 512
         # sort of arbitrary, want to avoid weird stuff that happens at the beginning of signal, must be an integer multiple of 16!!
         skip_bytes = 256000
+        desired_length = fftSize * 1024  # Desired read length
+        
+        # Get file size to ensure we don't exceed bounds
+        file_size = await self.get_file_length(iq_path)
+        
+        # Adjust skip_bytes if file is smaller than the skip offset
+        if skip_bytes >= file_size:
+            skip_bytes = 0
+        
+        # Calculate available bytes after skip
+        available_bytes = file_size - skip_bytes
+        
+        # Use the minimum of desired length and available bytes
+        read_length = min(desired_length, available_bytes)
+        
         # it's not going to be 1024 rows, for f32 its 128 rows and for int16 its 256 rows
-        content = await self.get_blob_content(iq_path, skip_bytes, fftSize * 1024)
+        content = await self.get_blob_content(iq_path, skip_bytes, read_length)
         return get_spectrogram_image(content, data_type, fftSize)
 
     async def blob_exist(self, filepath):
