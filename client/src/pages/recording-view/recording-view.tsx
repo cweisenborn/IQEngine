@@ -74,6 +74,11 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
       const oldScale = scale;
       const pointer = stage.getPointerPosition();
 
+      // Safety check for pointer position
+      if (!pointer) {
+        return;
+      }
+
       const mousePointTo = {
         x: (pointer.x - position.x) / oldScale,
         y: (pointer.y - position.y) / oldScale,

@@ -19,7 +19,9 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
   useEffect(() => {
     if (displayedIQ && displayedIQ.length > 0) {
       // Check if displayedIQ contains valid data (not all -Infinity)
-      const hasValidData = displayedIQ.some((val) => val !== -Infinity && !isNaN(val));
+      // For performance, only check a sample of values
+      const sampleSize = Math.min(100, displayedIQ.length);
+      const hasValidData = Array.from(displayedIQ.slice(0, sampleSize)).some((val) => val !== -Infinity && !isNaN(val));
       if (!hasValidData) {
         setIsLoading(true);
         return;
