@@ -64,7 +64,6 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       {fftStepSize === 0 ? (
         !isLoading && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0 ? (
           <Plot
-            key={`freq-plot-${frequencies.length}-${magnitudes.length}`}
             data={[
               {
                 x: frequencies,

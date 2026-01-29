@@ -59,7 +59,6 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
       {fftStepSize === 0 ? (
         !isLoading && I && Q && I.length > 0 && Q.length > 0 ? (
           <Plot
-            key={`time-plot-${I.length}-${Q.length}`}
             data={[
               {
                 y: I,
