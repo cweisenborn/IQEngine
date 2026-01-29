@@ -1,5 +1,5 @@
 from unittest import mock
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 import pytest
 from app import datasources
