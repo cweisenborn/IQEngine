@@ -57,7 +57,7 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
         Below shows the time domain of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        isLoading || !I || !Q ? (
+        isLoading || !I || !Q || I.length === 0 || Q.length === 0 ? (
           <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
             <p className="text-primary text-center">Loading time domain data...</p>
           </div>
