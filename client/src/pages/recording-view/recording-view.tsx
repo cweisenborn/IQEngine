@@ -103,6 +103,12 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
     }
   }
 
+  function handleDoubleClick(): void {
+    // Reset zoom on double-click
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }
+
   // Sort of messy but this is how the IQ gets passed into useGetImage which internally has its own state for iqData
   useEffect(() => {
     if (displayedIQ && displayedIQ.length > 0) {
@@ -120,7 +126,8 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
           <div className="flex flex-row" id="spectrogram">
             <Stage width={spectrogramWidth} height={spectrogramHeight}>
               <Layer 
-                onWheel={handleWheel} 
+                onWheel={handleWheel}
+                onDblClick={handleDoubleClick}
                 imageSmoothingEnabled={false}
                 scaleX={scale}
                 scaleY={scale}
@@ -149,6 +156,11 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
               <TimeSelectorMinimap />
             </Stage>
           </div>
+          {scale !== 1 && (
+            <div className="text-xs text-center mt-1 text-primary">
+              Zoom: {scale.toFixed(1)}x (Ctrl+scroll to zoom, drag to pan, double-click to reset)
+            </div>
+          )}
         </>
       )}
       {currentTab === Tab.Time && <TimePlot displayedIQ={displayedIQ} fftStepSize={fftStepSize} />}
