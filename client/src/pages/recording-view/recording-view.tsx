@@ -43,6 +43,8 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
 
   const { displayedIQ, spectrogramHeight } = useSpectrogram(currentFFT);
   const { width, height } = useWindowSize();
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const spectrogramHeight = height - 450; // hand-tuned for now
@@ -63,12 +65,41 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
 
   function handleWheel(evt: KonvaEventObject<WheelEvent>): void {
     evt.evt.preventDefault();
-    const scrollAmount = Math.floor(evt.evt.deltaY);
-    const nextPosition = currentFFT + scrollAmount + spectrogramHeight * (fftStepSize + 1);
-    const maxPosition = meta.getTotalSamples() / fftSize;
+    
+    // Check if Ctrl/Cmd key is pressed for zooming
+    if (evt.evt.ctrlKey || evt.evt.metaKey) {
+      // Zoom functionality
+      const scaleBy = 1.1;
+      const stage = evt.target.getStage();
+      const oldScale = scale;
+      const pointer = stage.getPointerPosition();
 
-    if (nextPosition < maxPosition) {
-      setCurrentFFT(Math.max(0, currentFFT + scrollAmount));
+      const mousePointTo = {
+        x: (pointer.x - position.x) / oldScale,
+        y: (pointer.y - position.y) / oldScale,
+      };
+
+      const newScale = evt.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+      
+      // Limit zoom range
+      const clampedScale = Math.max(0.5, Math.min(5, newScale));
+
+      const newPos = {
+        x: pointer.x - mousePointTo.x * clampedScale,
+        y: pointer.y - mousePointTo.y * clampedScale,
+      };
+
+      setScale(clampedScale);
+      setPosition(newPos);
+    } else {
+      // Scrolling functionality (existing behavior)
+      const scrollAmount = Math.floor(evt.evt.deltaY);
+      const nextPosition = currentFFT + scrollAmount + spectrogramHeight * (fftStepSize + 1);
+      const maxPosition = meta.getTotalSamples() / fftSize;
+
+      if (nextPosition < maxPosition) {
+        setCurrentFFT(Math.max(0, currentFFT + scrollAmount));
+      }
     }
   }
 
@@ -88,7 +119,21 @@ export function DisplaySpectrogram({ currentFFT, setCurrentFFT, currentTab }) {
           </Stage>
           <div className="flex flex-row" id="spectrogram">
             <Stage width={spectrogramWidth} height={spectrogramHeight}>
-              <Layer onWheel={handleWheel} imageSmoothingEnabled={false}>
+              <Layer 
+                onWheel={handleWheel} 
+                imageSmoothingEnabled={false}
+                scaleX={scale}
+                scaleY={scale}
+                x={position.x}
+                y={position.y}
+                draggable={scale > 1}
+                onDragEnd={(e) => {
+                  setPosition({
+                    x: e.target.x(),
+                    y: e.target.y(),
+                  });
+                }}
+              >
                 <Image image={image} x={0} y={0} width={spectrogramWidth} height={spectrogramHeight} />
               </Layer>
               <AnnotationViewer currentFFT={currentFFT} />

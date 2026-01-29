@@ -14,9 +14,17 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
   const { cursorFreqShift } = useCursorContext(); // cursorFreqShift is in normalized freq (-0.5 to +0.5) regardless of if display RF is on
   const [I, setI] = useState<Float32Array>();
   const [Q, setQ] = useState<Float32Array>();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (displayedIQ && displayedIQ.length > 0) {
+      // Check if displayedIQ contains valid data (not all -Infinity)
+      const hasValidData = displayedIQ.some((val) => val !== -Infinity && !isNaN(val));
+      if (!hasValidData) {
+        setIsLoading(true);
+        return;
+      }
+
       const temp_I = new Float32Array(displayedIQ.length / 2);
       const temp_Q = new Float32Array(displayedIQ.length / 2);
       for (let i = 0; i < displayedIQ.length / 2; i++) {
@@ -35,6 +43,9 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
       }
       setI(temp_I);
       setQ(temp_Q);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
     }
   }, [displayedIQ, freqShift, cursorFreqShift]);
 
@@ -44,47 +55,53 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
         Below shows the time domain of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        <Plot
-          data={[
-            {
-              y: I,
-              type: 'scattergl', // scattergl renders on an html5 canvas, whereas regular scatter creates svg objects that get inserted in the current document, consuming muuuuuch more memory
-              name: 'I',
-            },
-            {
-              y: Q,
-              type: 'scattergl',
-              name: 'Q',
-            },
-          ]}
-          layout={{
-            width: spectrogramWidth,
-            height: spectrogramHeight,
-            margin: {
-              l: 0,
-              r: 0,
-              b: 0,
-              t: 0,
-              pad: 0,
-            },
-            dragmode: 'pan',
-            showlegend: true,
-            template: template,
-            xaxis: {
-              title: 'Time',
-              rangeslider: {},
-            },
-            yaxis: {
-              title: 'Samples',
-              fixedrange: true,
-            },
-            uirevision: 'true', // keeps zoom/pan the same when data changes
-          }}
-          config={{
-            displayModeBar: true,
-            scrollZoom: true,
-          }}
-        />
+        isLoading || !I || !Q ? (
+          <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
+            <p className="text-primary text-center">Loading time domain data...</p>
+          </div>
+        ) : (
+          <Plot
+            data={[
+              {
+                y: I,
+                type: 'scattergl', // scattergl renders on an html5 canvas, whereas regular scatter creates svg objects that get inserted in the current document, consuming muuuuuch more memory
+                name: 'I',
+              },
+              {
+                y: Q,
+                type: 'scattergl',
+                name: 'Q',
+              },
+            ]}
+            layout={{
+              width: spectrogramWidth,
+              height: spectrogramHeight,
+              margin: {
+                l: 0,
+                r: 0,
+                b: 0,
+                t: 0,
+                pad: 0,
+              },
+              dragmode: 'pan',
+              showlegend: true,
+              template: template,
+              xaxis: {
+                title: 'Time',
+                rangeslider: {},
+              },
+              yaxis: {
+                title: 'Samples',
+                fixedrange: true,
+              },
+              uirevision: 'true', // keeps zoom/pan the same when data changes
+            }}
+            config={{
+              displayModeBar: true,
+              scrollZoom: true,
+            }}
+          />
+        )
       ) : (
         <>
           <h1 className="text-center">Plot only visible when Zoom Out Level is minimum (0)</h1>

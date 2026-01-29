@@ -14,11 +14,19 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
   const { spectrogramWidth, spectrogramHeight, meta, includeRfFreq } = useSpectrogramContext();
   const [frequencies, setFrequencies] = useState([]);
   const [magnitudes, setMagnitudes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const sampleRate = meta.getSampleRate();
   const centerFrequency = meta.getCenterFrequency();
 
   useEffect(() => {
     if (displayedIQ && displayedIQ.length > 0) {
+      // Check if displayedIQ contains valid data (not all -Infinity)
+      const hasValidData = displayedIQ.some((val) => val !== -Infinity && !isNaN(val));
+      if (!hasValidData) {
+        setIsLoading(true);
+        return;
+      }
+
       // Calc PSD
       const fftSize = Math.pow(2, Math.floor(Math.log2(displayedIQ.length / 2))); // closest power of 2, rounded down
       const f = new FFT(fftSize);
@@ -40,6 +48,9 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       } else {
         setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
       }
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
     }
   }, [displayedIQ, includeRfFreq, sampleRate, centerFrequency]); // TODO make sure this isnt going to be sluggish when currentSamples is huge
 
@@ -49,40 +60,46 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
         Below shows the power spectral density of the sample range displayed on the spectrogram tab
       </p>
       {fftStepSize === 0 ? (
-        <Plot
-          data={[
-            {
-              x: frequencies,
-              y: magnitudes,
-              type: 'scattergl',
-            },
-          ]}
-          layout={{
-            width: spectrogramWidth,
-            height: spectrogramHeight,
-            margin: {
-              l: 0,
-              r: 0,
-              b: 0,
-              t: 0,
-              pad: 0,
-            },
-            dragmode: 'pan',
-            template: template,
-            xaxis: {
-              title: 'Frequency',
-              rangeslider: {}, // this makes it display
-            },
-            yaxis: {
-              title: 'Magnitude',
-              fixedrange: false,
-            },
-          }}
-          config={{
-            displayModeBar: true,
-            scrollZoom: true,
-          }}
-        />
+        isLoading || frequencies.length === 0 ? (
+          <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
+            <p className="text-primary text-center">Loading frequency data...</p>
+          </div>
+        ) : (
+          <Plot
+            data={[
+              {
+                x: frequencies,
+                y: magnitudes,
+                type: 'scattergl',
+              },
+            ]}
+            layout={{
+              width: spectrogramWidth,
+              height: spectrogramHeight,
+              margin: {
+                l: 0,
+                r: 0,
+                b: 0,
+                t: 0,
+                pad: 0,
+              },
+              dragmode: 'pan',
+              template: template,
+              xaxis: {
+                title: 'Frequency',
+                rangeslider: {}, // this makes it display
+              },
+              yaxis: {
+                title: 'Magnitude',
+                fixedrange: false,
+              },
+            }}
+            config={{
+              displayModeBar: true,
+              scrollZoom: true,
+            }}
+          />
+        )
       ) : (
         <>
           <h1 className="text-center">Plot only visible when Zoom Out Level is minimum (0)</h1>
