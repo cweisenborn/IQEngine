@@ -24,17 +24,34 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
   const centerFrequency = meta.getCenterFrequency();
 
   useEffect(() => {
+    console.log('[FrequencyPlot] useEffect triggered', {
+      hasDisplayedIQ: !!displayedIQ,
+      displayedIQLength: displayedIQ?.length,
+      fftStepSize: fftStepSize,
+      isLoading,
+      hasEverHadData: hasEverHadData.current,
+    });
+
     if (displayedIQ && displayedIQ.length > 0) {
       // Check if displayedIQ contains valid data (not all -Infinity)
       // For performance, only check a sample of values
       const sampleSize = Math.min(100, displayedIQ.length);
       const hasValidData = Array.from(displayedIQ.slice(0, sampleSize)).some((val) => val !== -Infinity && !isNaN(val));
+      
+      console.log('[FrequencyPlot] Data validation', {
+        sampleSize,
+        hasValidData,
+        firstFewValues: Array.from(displayedIQ.slice(0, 10)),
+      });
+      
       if (!hasValidData) {
+        console.log('[FrequencyPlot] Invalid data detected, staying in loading state');
         setIsLoading(true);
         hasEverHadData.current = false; // Reset flag when data becomes invalid
         return;
       }
 
+      console.log('[FrequencyPlot] Processing valid data...');
       // Calc PSD
       const fftSize = Math.pow(2, Math.floor(Math.log2(displayedIQ.length / 2))); // closest power of 2, rounded down
       const f = new FFT(fftSize);
@@ -56,9 +73,17 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       } else {
         setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
       }
+      
+      console.log('[FrequencyPlot] Data processed successfully', {
+        frequenciesLength: frequencies.length,
+        magnitudesLength: mags.length,
+      });
+      
       hasEverHadData.current = true; // Mark that we've successfully loaded data
       setIsLoading(false);
+      console.log('[FrequencyPlot] State updated: isLoading=false, hasEverHadData=true');
     } else {
+      console.log('[FrequencyPlot] No data or empty data, staying in loading state');
       setIsLoading(true);
       hasEverHadData.current = false; // Reset flag when no data
     }
@@ -69,8 +94,30 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       <p className="text-primary text-center">
         Below shows the power spectral density of the sample range displayed on the spectrogram tab
       </p>
-      {fftStepSize === 0 ? (
-        !isLoading && hasEverHadData.current && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0 ? (
+      {(() => {
+        console.log('[FrequencyPlot] Render decision', {
+          fftStepSize,
+          isLoading,
+          hasEverHadData: hasEverHadData.current,
+          hasFrequencies: !!frequencies,
+          frequenciesLength: frequencies?.length,
+          hasMagnitudes: !!magnitudes,
+          magnitudesLength: magnitudes?.length,
+        });
+        
+        if (fftStepSize !== 0) {
+          console.log('[FrequencyPlot] fftStepSize is not 0, showing message');
+          return <p className="text-center text-sm">Plot only visible when Zoom Out Level is minimum (0)</p>;
+        }
+        
+        const shouldRender = !isLoading && hasEverHadData.current && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0;
+        console.log('[FrequencyPlot] Should render plot?', shouldRender);
+        
+        if (!shouldRender) {
+          return <p className="text-center text-sm">Loading frequency data...</p>;
+        }
+        
+        return (
           <Plot
             data={[
               {
@@ -105,17 +152,8 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
               scrollZoom: true,
             }}
           />
-        ) : (
-          <div className="flex justify-center items-center" style={{ height: spectrogramHeight }}>
-            <p className="text-primary text-center">Loading frequency data...</p>
-          </div>
-        )
-      ) : (
-        <>
-          <h1 className="text-center">Plot only visible when Zoom Out Level is minimum (0)</h1>
-          <p className="text-primary text-center mb-6">(Otherwise the IQ samples are not contiguous)</p>
-        </>
-      )}
+        );
+      })()}
     </div>
   );
 };
