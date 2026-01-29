@@ -27,6 +27,7 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
       const hasValidData = Array.from(displayedIQ.slice(0, sampleSize)).some((val) => val !== -Infinity && !isNaN(val));
       if (!hasValidData) {
         setIsLoading(true);
+        hasEverHadData.current = false; // Reset flag when data becomes invalid
         return;
       }
 
@@ -48,10 +49,11 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
       }
       setI(temp_I);
       setQ(temp_Q);
-      setIsLoading(false);
       hasEverHadData.current = true; // Mark that we've successfully loaded data
+      setIsLoading(false);
     } else {
       setIsLoading(true);
+      hasEverHadData.current = false; // Reset flag when no data
     }
   }, [displayedIQ, freqShift, cursorFreqShift]);
 

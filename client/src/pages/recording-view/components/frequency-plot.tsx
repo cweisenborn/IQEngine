@@ -30,6 +30,7 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       const hasValidData = Array.from(displayedIQ.slice(0, sampleSize)).some((val) => val !== -Infinity && !isNaN(val));
       if (!hasValidData) {
         setIsLoading(true);
+        hasEverHadData.current = false; // Reset flag when data becomes invalid
         return;
       }
 
@@ -54,10 +55,11 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       } else {
         setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
       }
-      setIsLoading(false);
       hasEverHadData.current = true; // Mark that we've successfully loaded data
+      setIsLoading(false);
     } else {
       setIsLoading(true);
+      hasEverHadData.current = false; // Reset flag when no data
     }
   }, [displayedIQ, includeRfFreq, sampleRate, centerFrequency]); // TODO make sure this isnt going to be sluggish when currentSamples is huge
 
