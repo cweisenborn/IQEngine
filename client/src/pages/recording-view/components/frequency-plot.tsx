@@ -14,11 +14,44 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
   const { spectrogramWidth, spectrogramHeight, meta, includeRfFreq } = useSpectrogramContext();
   const [frequencies, setFrequencies] = useState([]);
   const [magnitudes, setMagnitudes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Track if we currently have valid data loaded (prevents Plot rendering before/without data)
+  // Note: This flag is reset to false when data becomes invalid or empty
+  const hasEverHadData = React.useRef(false);
+  
   const sampleRate = meta.getSampleRate();
   const centerFrequency = meta.getCenterFrequency();
 
   useEffect(() => {
+    console.log('[FrequencyPlot] useEffect triggered', {
+      hasDisplayedIQ: !!displayedIQ,
+      displayedIQLength: displayedIQ?.length,
+      fftStepSize: fftStepSize,
+      isLoading,
+      hasEverHadData: hasEverHadData.current,
+    });
+
     if (displayedIQ && displayedIQ.length > 0) {
+      // Check if displayedIQ contains valid data (not all -Infinity)
+      // For performance, only check a sample of values
+      const sampleSize = Math.min(100, displayedIQ.length);
+      const hasValidData = Array.from(displayedIQ.slice(0, sampleSize)).some((val) => val !== -Infinity && !isNaN(val));
+      
+      console.log('[FrequencyPlot] Data validation', {
+        sampleSize,
+        hasValidData,
+        firstFewValues: Array.from(displayedIQ.slice(0, 10)),
+      });
+      
+      if (!hasValidData) {
+        console.log('[FrequencyPlot] Invalid data detected, staying in loading state');
+        setIsLoading(true);
+        hasEverHadData.current = false; // Reset flag when data becomes invalid
+        return;
+      }
+
+      console.log('[FrequencyPlot] Processing valid data...');
       // Calc PSD
       const fftSize = Math.pow(2, Math.floor(Math.log2(displayedIQ.length / 2))); // closest power of 2, rounded down
       const f = new FFT(fftSize);
@@ -35,11 +68,23 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
 
       // calc x-axis
       const step = sampleRate / fftSize;
-      if (!includeRfFreq) {
-        setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i));
-      } else {
-        setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
-      }
+      const freqs = !includeRfFreq
+        ? Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i)
+        : Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency);
+      setFrequencies(freqs);
+      
+      console.log('[FrequencyPlot] Data processed successfully', {
+        frequenciesLength: freqs.length,
+        magnitudesLength: mags.length,
+      });
+      
+      hasEverHadData.current = true; // Mark that we've successfully loaded data
+      setIsLoading(false);
+      console.log('[FrequencyPlot] State updated: isLoading=false, hasEverHadData=true');
+    } else {
+      console.log('[FrequencyPlot] No data or empty data, staying in loading state');
+      setIsLoading(true);
+      hasEverHadData.current = false; // Reset flag when no data
     }
   }, [displayedIQ, includeRfFreq, sampleRate, centerFrequency]); // TODO make sure this isnt going to be sluggish when currentSamples is huge
 
@@ -48,47 +93,76 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
       <p className="text-primary text-center">
         Below shows the power spectral density of the sample range displayed on the spectrogram tab
       </p>
-      {fftStepSize === 0 ? (
-        <Plot
-          data={[
-            {
-              x: frequencies,
-              y: magnitudes,
-              type: 'scattergl',
-            },
-          ]}
-          layout={{
-            width: spectrogramWidth,
-            height: spectrogramHeight,
-            margin: {
-              l: 0,
-              r: 0,
-              b: 0,
-              t: 0,
-              pad: 0,
-            },
-            dragmode: 'pan',
-            template: template,
-            xaxis: {
-              title: 'Frequency',
-              rangeslider: {}, // this makes it display
-            },
-            yaxis: {
-              title: 'Magnitude',
-              fixedrange: false,
-            },
-          }}
-          config={{
-            displayModeBar: true,
-            scrollZoom: true,
-          }}
-        />
-      ) : (
-        <>
-          <h1 className="text-center">Plot only visible when Zoom Out Level is minimum (0)</h1>
-          <p className="text-primary text-center mb-6">(Otherwise the IQ samples are not contiguous)</p>
-        </>
-      )}
+      {(() => {
+        console.log('[FrequencyPlot] Render decision', {
+          fftStepSize,
+          isLoading,
+          hasEverHadData: hasEverHadData.current,
+          hasFrequencies: !!frequencies,
+          frequenciesLength: frequencies?.length,
+          hasMagnitudes: !!magnitudes,
+          magnitudesLength: magnitudes?.length,
+        });
+        
+        if (fftStepSize !== 0) {
+          console.log('[FrequencyPlot] fftStepSize is not 0, showing message');
+          return <p className="text-center text-sm">Plot only visible when Zoom Out Level is minimum (0)</p>;
+        }
+        
+        const shouldRender = !isLoading && hasEverHadData.current && frequencies && magnitudes && frequencies.length > 0 && magnitudes.length > 0;
+        console.log('[FrequencyPlot] Should render plot?', shouldRender);
+        
+        if (!shouldRender) {
+          return <p className="text-center text-sm">Loading frequency data...</p>;
+        }
+        
+        // Use scatter (SVG) instead of scattergl (WebGL) to avoid WebGL buffer issues
+        // scattergl was causing "clear() called with no buffers" errors for certain data sizes
+        const plotType = 'scatter';
+        console.log('[FrequencyPlot] Using plot type:', plotType, 'for data length:', magnitudes.length);
+        
+        return (
+          <Plot
+            data={[
+              {
+                x: frequencies,
+                y: magnitudes,
+                type: plotType,
+              },
+            ]}
+            layout={{
+              width: spectrogramWidth,
+              height: spectrogramHeight,
+              margin: {
+                l: 60,
+                r: 20,
+                b: 50,
+                t: 20,
+                pad: 4,
+              },
+              dragmode: 'pan',
+              template: template,
+              xaxis: {
+                title: 'Frequency',
+                autorange: true,
+                rangeslider: {
+                  visible: true,
+                  autorange: true,
+                },
+              },
+              yaxis: {
+                title: 'Magnitude',
+                autorange: true,
+                fixedrange: false,
+              },
+            }}
+            config={{
+              displayModeBar: true,
+              scrollZoom: true,
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };

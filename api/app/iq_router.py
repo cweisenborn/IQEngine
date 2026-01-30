@@ -268,7 +268,7 @@ async def get_minimap_iq(
             blob_size = await azure_client.get_file_length(file_name)
             total_ffts = math.floor(blob_size / (bytes_per_iq_sample * fft_size))
             # get N ffts equally spaced out
-            N = 200
+            N = min(200, total_ffts)
             block_indexes = [math.floor(i * total_ffts / N) for i in range(N)]
             # make sure that no block index is larger than the total number of ffts
             block_indexes = [i for i in block_indexes if i < total_ffts]

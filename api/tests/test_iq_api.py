@@ -255,3 +255,55 @@ async def test_get_iq_data_with_offset_plus_count_larger_than_blob_size(mock_dec
         )
         assert response.status_code == 200
         assert response.content == arr
+
+
+@mock.patch("app.iq_router.AzureBlobClient.blob_exist", return_value=False)
+@mock.patch("app.iq_router.AzureBlobClient.can_write", return_value=False)
+@mock.patch("app.iq_router.AzureBlobClient.get_file_length", return_value=20480)  # 5120 samples * 4 bytes per ci16_le sample
+@mock.patch("app.iq_router.decrypt", return_value="secret")
+@pytest.mark.asyncio
+async def test_get_minimap_with_small_file(mock_decrypt, mock_get_file_length, mock_can_write, mock_blob_exist, client):
+    """Test minimap generation with small file (5120 samples = 80 FFTs). Should use 80 FFTs instead of trying to get 200."""
+    from app import datasources
+
+    client.app.dependency_overrides[datasources.get] = mock_get_test_datasource
+    
+    # Create a small test file with 5120 samples (80 FFTs with fft_size=64)
+    # ci16_le = 4 bytes per sample (2 bytes I + 2 bytes Q)
+    arr = numpy.random.randint(-32768, 32767, size=5120 * 2, dtype=numpy.int16).tobytes()
+    format = "ci16_le"
+    
+    with mock.patch("app.azure_client.AzureBlobClient.get_blob_content", return_value=arr):
+        response = client.get(
+            f"/api/datasources/"
+            f'{test_datasource["account"]}/{test_datasource["container"]}'
+            f"/test_file/minimap-data?format={format}&filepath=test_file"
+        )
+        assert response.status_code == 200
+        # The response should contain valid minimap data without errors
+
+
+@mock.patch("app.iq_router.AzureBlobClient.blob_exist", return_value=False)
+@mock.patch("app.iq_router.AzureBlobClient.can_write", return_value=False)
+@mock.patch("app.iq_router.AzureBlobClient.get_file_length", return_value=819200)  # 102400 samples * 8 bytes per cf32_le sample
+@mock.patch("app.iq_router.decrypt", return_value="secret")
+@pytest.mark.asyncio
+async def test_get_minimap_with_large_file(mock_decrypt, mock_get_file_length, mock_can_write, mock_blob_exist, client):
+    """Test minimap generation with large file (102400 samples = 1600 FFTs). Should downsample to 200 FFTs."""
+    from app import datasources
+
+    client.app.dependency_overrides[datasources.get] = mock_get_test_datasource
+    
+    # Create a large test file with 102400 samples (1600 FFTs with fft_size=64)
+    # cf32_le = 8 bytes per sample (4 bytes I + 4 bytes Q)
+    arr = numpy.random.randn(102400 * 2).astype(numpy.float32).tobytes()
+    format = "cf32_le"
+    
+    with mock.patch("app.azure_client.AzureBlobClient.get_blob_content", return_value=arr):
+        response = client.get(
+            f"/api/datasources/"
+            f'{test_datasource["account"]}/{test_datasource["container"]}'
+            f"/test_file/minimap-data?format={format}&filepath=test_file"
+        )
+        assert response.status_code == 200
+        # The response should contain valid minimap data with downsampled FFTs
