@@ -122,17 +122,21 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
           );
         }
         
+        // Use scatter (SVG) for small datasets to avoid WebGL issues, scattergl for large datasets for performance
+        const plotType = I.length < 50000 ? 'scatter' : 'scattergl';
+        console.log('[TimePlot] Using plot type:', plotType, 'for data length:', I.length);
+        
         return (
           <Plot
             data={[
               {
                 y: I,
-                type: 'scattergl', // scattergl renders on an html5 canvas, whereas regular scatter creates svg objects that get inserted in the current document, consuming muuuuuch more memory
+                type: plotType,
                 name: 'I',
               },
               {
                 y: Q,
-                type: 'scattergl',
+                type: plotType,
                 name: 'Q',
               },
             ]}
