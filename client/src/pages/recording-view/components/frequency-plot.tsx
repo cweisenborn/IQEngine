@@ -68,14 +68,13 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
 
       // calc x-axis
       const step = sampleRate / fftSize;
-      if (!includeRfFreq) {
-        setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i));
-      } else {
-        setFrequencies(Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency));
-      }
+      const freqs = !includeRfFreq
+        ? Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i)
+        : Array.from({ length: fftSize }, (_, i) => sampleRate / -2.0 + step * i + centerFrequency);
+      setFrequencies(freqs);
       
       console.log('[FrequencyPlot] Data processed successfully', {
-        frequenciesLength: frequencies.length,
+        frequenciesLength: freqs.length,
         magnitudesLength: mags.length,
       });
       
@@ -140,7 +139,6 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
               template: template,
               xaxis: {
                 title: 'Frequency',
-                rangeslider: {}, // this makes it display
               },
               yaxis: {
                 title: 'Magnitude',

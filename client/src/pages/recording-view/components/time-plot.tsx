@@ -151,7 +151,6 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
               template: template,
               xaxis: {
                 title: 'Time',
-                rangeslider: {},
               },
               yaxis: {
                 title: 'Samples',
