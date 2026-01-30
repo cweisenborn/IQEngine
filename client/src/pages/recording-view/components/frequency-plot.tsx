@@ -116,8 +116,9 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
           return <p className="text-center text-sm">Loading frequency data...</p>;
         }
         
-        // Use scatter (SVG) for small datasets to avoid WebGL issues, scattergl for large datasets for performance
-        const plotType = magnitudes.length < 50000 ? 'scatter' : 'scattergl';
+        // Use scatter (SVG) instead of scattergl (WebGL) to avoid WebGL buffer issues
+        // scattergl was causing "clear() called with no buffers" errors for certain data sizes
+        const plotType = 'scatter';
         console.log('[FrequencyPlot] Using plot type:', plotType, 'for data length:', magnitudes.length);
         
         return (
