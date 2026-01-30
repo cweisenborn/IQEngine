@@ -134,19 +134,25 @@ export const FrequencyPlot = ({ displayedIQ, fftStepSize }: FreqPlotProps) => {
               width: spectrogramWidth,
               height: spectrogramHeight,
               margin: {
-                l: 0,
-                r: 0,
-                b: 0,
-                t: 0,
-                pad: 0,
+                l: 60,
+                r: 20,
+                b: 50,
+                t: 20,
+                pad: 4,
               },
               dragmode: 'pan',
               template: template,
               xaxis: {
                 title: 'Frequency',
+                autorange: true,
+                rangeslider: {
+                  visible: true,
+                  autorange: true,
+                },
               },
               yaxis: {
                 title: 'Magnitude',
+                autorange: true,
                 fixedrange: false,
               },
             }}

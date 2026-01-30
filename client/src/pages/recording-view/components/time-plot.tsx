@@ -145,21 +145,27 @@ export const TimePlot = ({ displayedIQ, fftStepSize }: TimePlotProps) => {
               width: spectrogramWidth,
               height: spectrogramHeight,
               margin: {
-                l: 0,
-                r: 0,
-                b: 0,
-                t: 0,
-                pad: 0,
+                l: 60,
+                r: 20,
+                b: 50,
+                t: 20,
+                pad: 4,
               },
               dragmode: 'pan',
               showlegend: true,
               template: template,
               xaxis: {
                 title: 'Time',
+                autorange: true,
+                rangeslider: {
+                  visible: true,
+                  autorange: true,
+                },
               },
               yaxis: {
                 title: 'Samples',
-                fixedrange: true,
+                autorange: true,
+                fixedrange: false,
               },
               uirevision: 'true', // keeps zoom/pan the same when data changes
             }}
